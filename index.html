@@ -17,12 +17,56 @@
   .label.incorrect-label { color: red; font-weight: bold; margin-left: 5px; }
   .pass { color: green; font-weight: bold; margin-left: 10px; }
   .fail { color: red; font-weight: bold; margin-left: 10px; }
+
+  /* 토글 스위치 스타일 */
+  .switch-container { display: flex; align-items: center; margin-bottom: 10px; font-weight: bold; }
+  .switch-label { margin: 0 15px; }
+  .scroll-text { font-weight: bold; margin: 0 15px; } /* 양쪽 글씨 간격 통일 */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 28px;
+  }
+  .switch input { display: none; }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top:0; left:0; right:0; bottom:0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 28px;
+  }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 22px; width: 22px;
+    left: 3px; bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+  }
+  input:checked + .slider { background-color: #2196F3; }
+  input:checked + .slider:before { transform: translateX(32px); }
 </style>
 </head>
 <body>
 
 <h1>성경 암송 검사기 <span id="passMark"></span></h1>
-<p>암송한 구절을 입력하면 단어 단위로 맞춘 부분은 초록색, 틀린 단어는 빨강색, 구절 전체가 맞으면 <strong>(정답)</strong>, 틀리면 <strong>(오답)</strong> 표시됩니다.</p>
+<p>
+암송한 구절을 입력하면 단어 단위로 맞춘 부분은 초록색, 틀린 단어는 빨강색, 구절 전체가 맞으면 <strong>(정답)</strong>, 틀리면 <strong>(오답)</strong> 표시됩니다.
+</p>
+
+<!-- 오토스크롤 UI -->
+<div class="switch-container">
+  <span>오토스크롤:</span>
+  <span class="scroll-text">오답</span>
+  <label class="switch">
+    <input type="checkbox" id="scrollCorrect">
+    <span class="slider"></span>
+  </label>
+  <span class="scroll-text">정답</span>
+</div>
 
 <textarea id="userInput" placeholder="암송한 구절을 붙여 넣으세요..."></textarea><br>
 <button onclick="checkVerses()">검사하기</button>
@@ -55,18 +99,19 @@ const verses = {
   "요한복음 13:34-35": ["새 계명을 너희에게 주노니 서로 사랑하라 내가 너희를 사랑한 것 같이 너희도 서로 사랑하라", "너희가 서로 사랑하면 이로써 모든 사람이 너희가 내 제자인 줄 알리라"]
 };
 
-// ID 안전하게 변환
 function makeSafeId(key) {
   return 'verse-' + key.replace(/[:\s]/g, '_');
 }
 
-// 공백과 <br> 제거
 function cleanText(text) {
   return text.replace(/\s+/g, '').replace(/<br>/gi, '').trim();
 }
 
+const scrollCheckbox = document.getElementById("scrollCorrect");
+
 function checkVerses() {
   const userInput = cleanText(document.getElementById("userInput").value);
+  const scrollCorrect = scrollCheckbox.checked;
   let resultHTML = "";
   let totalVerses = 0;
   let correctVerses = 0;
@@ -98,7 +143,6 @@ function checkVerses() {
       } else {
         displayHTML += `<span class="label incorrect-label">(오답)</span>`;
       }
-
       resultHTML += displayHTML + "<br>";
     });
 
@@ -107,7 +151,6 @@ function checkVerses() {
 
   document.getElementById("result").innerHTML = resultHTML;
 
-  // 점수 표시
   const passMark = document.getElementById("passMark");
   if (correctVerses === totalVerses) {
     passMark.innerHTML = `<span class="pass">통과</span>`;
@@ -115,15 +158,21 @@ function checkVerses() {
     passMark.innerHTML = `<span class="fail">점수: ${correctVerses} / ${totalVerses}</span>`;
   }
 
-  // 첫 오답 구절 스크롤
-  const firstWrong = document.querySelector(".verse .label.incorrect-label")?.closest(".verse");
-  if (firstWrong) firstWrong.scrollIntoView({ behavior: "smooth", block: "center" });
+  // 오토스크롤: 선택에 따라 오답/정답으로 스크롤
+  let target = null;
+  if (scrollCorrect) {
+    target = document.querySelector(".verse .label.correct-label")?.closest(".verse");
+  } else {
+    target = document.querySelector(".verse .label.incorrect-label")?.closest(".verse");
+  }
+  if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 function resetTest() {
   document.getElementById("userInput").value = '';
   document.getElementById("result").innerHTML = '';
   document.getElementById("passMark").innerHTML = '';
+  scrollCheckbox.checked = false;
 }
 </script>
 
